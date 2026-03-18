@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class EmmPolicyApiTest {
 
     private static final Logger logger = LoggerFactory.getLogger(EmmPolicyApiTest.class.getSimpleName());
@@ -58,6 +60,10 @@ public class EmmPolicyApiTest {
         PolicyUpdatedContentDTO policyUpdatedContentDTO = new PolicyUpdatedContentDTO();
         policyUpdatedContentDTO.setAdjustVolumeDisabled(Boolean.TRUE);
         policyUpdatedContentDTO.setEnableRemoteControl(Boolean.TRUE);
+        policyUpdatedContentDTO.setHideEnterpriseName(Boolean.TRUE);
+        policyUpdatedContentDTO.setEnableRemoteControl(true);
+        policyUpdatedContentDTO.setEnableUnattendedAccess(true);
+        policyUpdatedContentDTO.setUnattendedDeviceResponseTime(30);
 
         PolicyUpdatedContentDTO.ApplicationPolicy applicationPolicy = new PolicyUpdatedContentDTO.ApplicationPolicy();
         applicationPolicy.setPackageName("com.zolon.signrotatetest.com.zolon.signrotatetest");
@@ -98,9 +104,16 @@ public class EmmPolicyApiTest {
         request.setContentInfo(policyUpdatedContentDTO);
 
         LockedPolicyUpdateDTO lockedPolicyUpdateDTO = new LockedPolicyUpdateDTO();
-        lockedPolicyUpdateDTO.setKey("adjustVolumeDisabled");
+        lockedPolicyUpdateDTO.setKey("enableRemoteControl");
         lockedPolicyUpdateDTO.setLockFlag(Boolean.TRUE);
-        request.setLockedPolicyList(Lists.newArrayList(lockedPolicyUpdateDTO));
+        LockedPolicyUpdateDTO unattended = new LockedPolicyUpdateDTO();
+        unattended.setKey("enableUnattendedAccess");
+        unattended.setLockFlag(Boolean.TRUE);
+        LockedPolicyUpdateDTO unattendedTime = new LockedPolicyUpdateDTO();
+        unattendedTime.setKey("unattendedDeviceResponseTime");
+        unattendedTime.setLockFlag(Boolean.TRUE);
+
+        request.setLockedPolicyList(Lists.newArrayList(lockedPolicyUpdateDTO,unattended,unattendedTime));
 
         Result<String> result = emmPolicyApi.createResellerEmmPolicy(request);
         logger.debug("Result of create reseller emm policy: {}", result.toString());
@@ -249,7 +262,7 @@ public class EmmPolicyApiTest {
 
     @Test
     public void testGetDeviceEmmPolicySuccess() {
-        Result<EmmPolicyDTO> result = emmPolicyApi.getDeviceEmmPolicy("5069796194");
+        Result<EmmPolicyDTO> result = emmPolicyApi.getDeviceEmmPolicy("41041JEKB06660");
         logger.debug("Result of get device emm policy: {}", result.toString());
         Assert.assertEquals(0, result.getBusinessCode());
     }
@@ -283,8 +296,12 @@ public class EmmPolicyApiTest {
         PolicyUpdatedContentDTO policyUpdatedContentDTO = new PolicyUpdatedContentDTO();
         policyUpdatedContentDTO.setAdjustVolumeDisabled(Boolean.TRUE);
         policyUpdatedContentDTO.setEnableRemoteControl(Boolean.TRUE);
+        policyUpdatedContentDTO.setHideEnterpriseName(Boolean.TRUE);
         request.setContentInfo(policyUpdatedContentDTO);
         request.setInheritFlag(Boolean.FALSE);
+
+        policyUpdatedContentDTO.setEnableUnattendedAccess(true);
+        policyUpdatedContentDTO.setUnattendedDeviceResponseTime(10);
 
         PolicyUpdatedContentDTO.ApplicationPolicy applicationPolicy = new PolicyUpdatedContentDTO.ApplicationPolicy();
         applicationPolicy.setPackageName("com.zolon.signrotatetest.com.zolon.signrotatetest");
@@ -324,7 +341,17 @@ public class EmmPolicyApiTest {
         deviceConnectivityManagement.setApnPolicy(apnPolicy);
         policyUpdatedContentDTO.setDeviceConnectivityManagement(deviceConnectivityManagement);
         request.setContentInfo(policyUpdatedContentDTO);
+        LockedPolicyUpdateDTO lockedPolicyUpdateDTO = new LockedPolicyUpdateDTO();
+        lockedPolicyUpdateDTO.setKey("enableRemoteControl");
+        lockedPolicyUpdateDTO.setLockFlag(Boolean.FALSE);
+        LockedPolicyUpdateDTO unattended = new LockedPolicyUpdateDTO();
+        unattended.setKey("enableUnattendedAccess");
+        unattended.setLockFlag(Boolean.FALSE);
+        LockedPolicyUpdateDTO unattendedTime = new LockedPolicyUpdateDTO();
+        unattendedTime.setKey("unattendedDeviceResponseTime");
+        unattendedTime.setLockFlag(Boolean.FALSE);
 
+        request.setLockedPolicyList(Lists.newArrayList(lockedPolicyUpdateDTO,unattended,unattendedTime));
         Result<String> result = emmPolicyApi.createMerchantEmmPolicy(request);
         logger.debug("Result of create merchant emm policy: {}", result.toString());
         Assert.assertEquals(0, result.getBusinessCode());
@@ -483,6 +510,7 @@ public class EmmPolicyApiTest {
         PolicyUpdatedContentDTO policyUpdatedContentDTO = new PolicyUpdatedContentDTO();
         policyUpdatedContentDTO.setAdjustVolumeDisabled(Boolean.TRUE);
         policyUpdatedContentDTO.setEnableRemoteControl(Boolean.TRUE);
+        policyUpdatedContentDTO.setHideEnterpriseName(Boolean.TRUE);
         request.setContentInfo(policyUpdatedContentDTO);
         request.setInheritFlag(Boolean.FALSE);
 
@@ -523,12 +551,37 @@ public class EmmPolicyApiTest {
         apnPolicy.setApnSettings(Lists.newArrayList(apnSetting));
         deviceConnectivityManagement.setApnPolicy(apnPolicy);
         policyUpdatedContentDTO.setDeviceConnectivityManagement(deviceConnectivityManagement);
+        policyUpdatedContentDTO.setNetworkConfigurations(buildNetworkConfigurations());
         request.setContentInfo(policyUpdatedContentDTO);
+
 
         Result<String> result = emmPolicyApi.createDeviceEmmPolicy(request);
         logger.debug("Result of create device emm policy: {}", result.toString());
         Assert.assertEquals(0, result.getBusinessCode());
     }
+
+    private List<PolicyUpdatedContentDTO.NetworkConfiguration> buildNetworkConfigurations(){
+
+        PolicyUpdatedContentDTO.NetworkConfiguration eapConfig = new PolicyUpdatedContentDTO.NetworkConfiguration();
+        eapConfig.setSsid("Enterprise01");
+        eapConfig.setCipherType("WPA_WPA2_WPA3_ENTERPRISE");
+        eapConfig.setEapMethod(null);
+        eapConfig.setPhaseMethod("MSCHAPv2");
+        eapConfig.setAnoID("SDSDSDSD");
+        eapConfig.setUserID("tunglee");
+        eapConfig.setUserPass("tunglee");
+        eapConfig.setDomain("www.pax.com");
+        eapConfig.setProxyType("NONE");
+
+        PolicyUpdatedContentDTO.CertFileData data=new PolicyUpdatedContentDTO.CertFileData();
+        data.setContent("实打实的撒");
+        data.setFileKey("Entdds_CA_152224152");
+        data.setFileName("ca.der");
+        eapConfig.setCaCert(data);
+
+        return Lists.newArrayList(eapConfig);
+    }
+
 
     @Test
     public void testCreateDeviceEmmPolicyFailByDeviceEmmPolicyCreateRequestIsInvalid() {
